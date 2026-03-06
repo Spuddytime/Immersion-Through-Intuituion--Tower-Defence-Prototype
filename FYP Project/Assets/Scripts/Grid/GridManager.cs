@@ -99,6 +99,37 @@ public class GridManager : MonoBehaviour
         node.placedObject = null;
     }
 
+    public System.Collections.Generic.List<GridNode> GetNeighbours(GridNode node)
+{
+    System.Collections.Generic.List<GridNode> neighbours = new System.Collections.Generic.List<GridNode>();
+
+    // Left
+    if (node.x - 1 >= 0)
+        neighbours.Add(grid[node.x - 1, node.y]);
+
+    // Right
+    if (node.x + 1 < gridWidth)
+        neighbours.Add(grid[node.x + 1, node.y]);
+
+    // Down
+    if (node.y - 1 >= 0)
+        neighbours.Add(grid[node.x, node.y - 1]);
+
+    // Up
+    if (node.y + 1 < gridHeight)
+        neighbours.Add(grid[node.x, node.y + 1]);
+
+    return neighbours;
+}
+
+public GridNode GetNode(int x, int y)
+{
+    if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight)
+        return null;
+
+    return grid[x, y];
+}
+
     // Draws the grid in the Scene view for debugging
     private void OnDrawGizmos()
     {
