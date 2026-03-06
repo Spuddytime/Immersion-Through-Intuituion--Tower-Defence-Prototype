@@ -7,18 +7,24 @@ public class PathTester : MonoBehaviour
     public Transform startMarker;
     public Transform goalMarker;
 
+    public LineRenderer pathLine;
+
     private List<GridNode> currentPath;
 
-    private void Update()
+    void Update()
     {
+        // Optional manual path test
         if (Input.GetKeyDown(KeyCode.Space))
         {
             TestPath();
         }
     }
 
-     public void TestPath()
+    public void TestPath()
     {
+        if (GridManager.Instance == null || Pathfinder.Instance == null)
+            return;
+
         if (!GridManager.Instance.GetXY(startMarker.position, out int startX, out int startY))
             return;
 
@@ -30,29 +36,48 @@ public class PathTester : MonoBehaviour
         if (currentPath == null)
         {
             Debug.Log("No path found.");
+
+            if (pathLine != null)
+            {
+                pathLine.positionCount = 0;
+            }
+
+            return;
         }
-        else        
+
+        Debug.Log("Path found. Length: " + currentPath.Count);
+
+        // Draw path in Game View using LineRenderer
+        if (pathLine != null)
         {
-            Debug.Log("Path found. Length: " + currentPath.Count);
+            pathLine.positionCount = currentPath.Count;
+
+            for (int i = 0; i < currentPath.Count; i++)
+            {
+                Vector3 pos = currentPath[i].worldPosition + Vector3.up * 0.1f;
+                pathLine.SetPosition(i, pos);
+            }
         }
     }
 
-    private void OnDrawGizmos()
+    // Debug path visualization in Scene view
+    void OnDrawGizmos()
     {
-        if (currentPath == null) return;
+        if (currentPath == null)
+            return;
 
         Gizmos.color = Color.cyan;
 
         for (int i = 0; i < currentPath.Count; i++)
         {
-            Gizmos.DrawSphere(currentPath[i].worldPosition + Vector3.up * 0.2f, 0.15f);
+            Vector3 pos = currentPath[i].worldPosition + Vector3.up * 0.2f;
+
+            Gizmos.DrawSphere(pos, 0.15f);
 
             if (i < currentPath.Count - 1)
             {
-                Gizmos.DrawLine(
-                    currentPath[i].worldPosition + Vector3.up * 0.2f,
-                    currentPath[i + 1].worldPosition + Vector3.up * 0.2f
-                );
+                Vector3 next = currentPath[i + 1].worldPosition + Vector3.up * 0.2f;
+                Gizmos.DrawLine(pos, next);
             }
         }
     }
