@@ -4,10 +4,15 @@ using UnityEngine;
 // Moves an enemy along a path and recalculates if the maze changes
 public class EnemyMover : MonoBehaviour
 {
+    [Header("Movement")]
     public float moveSpeed = 2f;
     public float turnSpeed = 8f;
     public Transform goalMarker;
     public int damageToBase = 1;
+
+    [Header("Visuals")]
+    public Transform visualRoot;
+    public Vector3 visualRotationOffset = Vector3.zero;
 
     private List<GridNode> path;
     private int currentPathIndex = 0;
@@ -26,6 +31,12 @@ public class EnemyMover : MonoBehaviour
     private void Start()
     {
         baseHealth = FindFirstObjectByType<BaseHealth>();
+
+        // Apply the visual offset once at start
+        if (visualRoot != null)
+        {
+            visualRoot.localRotation = Quaternion.Euler(visualRotationOffset);
+        }
     }
 
     public void SetPath(List<GridNode> newPath)
@@ -51,6 +62,7 @@ public class EnemyMover : MonoBehaviour
         Vector3 moveDirection = targetPosition - transform.position;
         moveDirection.y = 0f;
 
+        // Rotate the root for movement
         if (moveDirection.sqrMagnitude > 0.001f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection.normalized);
@@ -59,6 +71,12 @@ public class EnemyMover : MonoBehaviour
                 targetRotation,
                 turnSpeed * Time.deltaTime
             );
+        }
+
+        // Keep the visual child in the correct local orientation
+        if (visualRoot != null)
+        {
+            visualRoot.localRotation = Quaternion.Euler(visualRotationOffset);
         }
 
         transform.position = Vector3.MoveTowards(

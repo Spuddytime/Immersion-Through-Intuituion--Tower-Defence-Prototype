@@ -1,21 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Simple test spawner for creating one enemy on key press
+// Spawns a single enemy using the current valid path
 public class EnemySpawner : MonoBehaviour
 {
-    public GameObject enemyPrefab;
     public PathTester pathTester;
 
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            SpawnEnemy();
-        }
-    }
-
-    public void SpawnEnemy()
+    public void SpawnEnemy(GameObject enemyPrefab)
     {
         if (enemyPrefab == null || pathTester == null)
             return;
