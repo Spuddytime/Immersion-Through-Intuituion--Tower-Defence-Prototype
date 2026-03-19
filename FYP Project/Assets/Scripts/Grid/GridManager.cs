@@ -120,9 +120,7 @@ public class GridManager : MonoBehaviour
         return node != null && node.trapObject != null;
     }
 
-
-    // Logic for placing good ol walls maze style
-    public bool PlaceWall(int x, int y, GameObject wallPrefab)
+    public bool PlaceWall(int x, int y, GameObject wallPrefab, int cost)
     {
         GridNode node = GetNode(x, y);
 
@@ -132,13 +130,13 @@ public class GridManager : MonoBehaviour
         GameObject wall = Instantiate(wallPrefab, node.worldPosition, Quaternion.identity);
 
         node.wallObject = wall;
+        node.wallCost = cost;
         node.isBlocked = true;
 
         return true;
     }
 
-    // Basic placeholder turret for now will work on new turrets and designs later
-    public bool PlaceTurret(int x, int y, GameObject turretPrefab)
+    public bool PlaceTurret(int x, int y, GameObject turretPrefab, int cost)
     {
         GridNode node = GetNode(x, y);
 
@@ -155,58 +153,69 @@ public class GridManager : MonoBehaviour
         GameObject turret = Instantiate(turretPrefab, turretPosition, Quaternion.identity);
 
         node.turretObject = turret;
+        node.turretCost = cost;
 
         return true;
     }
 
-    public bool PlaceTrap(int x, int y, GameObject trapPrefab)
-{
-    GridNode node = GetNode(x, y);
-
-    if (node == null)
-        return false;
-
-    // Trap must be on walkable ground, not on a wall
-    if (node.wallObject != null)
-        return false;
-
-    if (node.trapObject != null)
-        return false;
-
-    Vector3 trapPosition = node.worldPosition + new Vector3(0f, trapHeightOffset, 0f);
-    GameObject trap = Instantiate(trapPrefab, trapPosition, Quaternion.identity);
-
-    node.trapObject = trap;
-
-    return true;
-}
-
-    public void ClearCell(int x, int y)
+    public bool PlaceTrap(int x, int y, GameObject trapPrefab, int cost)
     {
         GridNode node = GetNode(x, y);
 
         if (node == null)
-            return;
+            return false;
+
+        if (node.wallObject != null)
+            return false;
+
+        if (node.trapObject != null)
+            return false;
+
+        Vector3 trapPosition = node.worldPosition + new Vector3(0f, trapHeightOffset, 0f);
+        GameObject trap = Instantiate(trapPrefab, trapPosition, Quaternion.identity);
+
+        node.trapObject = trap;
+        node.trapCost = cost;
+
+        return true;
+    }
+
+    public int ClearCell(int x, int y)
+    {
+        GridNode node = GetNode(x, y);
+
+        if (node == null)
+            return 0;
+
+        int totalRefundValue = 0;
 
         if (node.trapObject != null)
         {
             Destroy(node.trapObject);
             node.trapObject = null;
+            totalRefundValue += Mathf.RoundToInt(node.trapCost * 0.5f);
+            node.trapCost = 0;
         }
 
         if (node.turretObject != null)
         {
             Destroy(node.turretObject);
             node.turretObject = null;
+            totalRefundValue += Mathf.RoundToInt(node.turretCost * 0.5f);
+            node.turretCost = 0;
         }
 
         if (node.wallObject != null)
         {
             Destroy(node.wallObject);
             node.wallObject = null;
+            totalRefundValue += Mathf.RoundToInt(node.wallCost * 0.5f);
+            node.wallCost = 0;
         }
 
         node.isBlocked = false;
+
+        return totalRefundValue;
     }
 
     private void OnDrawGizmos()

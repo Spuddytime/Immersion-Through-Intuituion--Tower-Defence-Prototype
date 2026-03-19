@@ -14,6 +14,10 @@ public class GridNode
     public GameObject turretObject;
     public GameObject trapObject;
 
+    public int wallCost;
+    public int turretCost;
+    public int trapCost;
+
     public GridNode cameFromNode;
 
     public GridNode(int x, int y, Vector3 worldPosition)
@@ -23,9 +27,17 @@ public class GridNode
         this.worldPosition = worldPosition;
 
         isBlocked = false;
+
         wallObject = null;
         turretObject = null;
         trapObject = null;
+
+        //adding a cost to the grid so sell function can work correctly
+
+        wallCost = 0;
+        turretCost = 0;
+        trapCost = 0;
+
         cameFromNode = null;
     }
 }

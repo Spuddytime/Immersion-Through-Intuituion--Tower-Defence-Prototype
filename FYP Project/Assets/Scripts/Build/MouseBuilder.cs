@@ -118,15 +118,15 @@ public class MouseBuilder : MonoBehaviour
                 switch (option.type)
                 {
                     case BuildType.Wall:
-                        placedSuccessfully = TryPlaceWall(x, y, option.prefab);
+                        placedSuccessfully = TryPlaceWall(x, y, option.prefab, option.cost);
                         break;
 
                     case BuildType.Turret:
-                        placedSuccessfully = TryPlaceTurret(x, y, option.prefab);
+                        placedSuccessfully = TryPlaceTurret(x, y, option.prefab, option.cost);
                         break;
 
                     case BuildType.Trap:
-                        placedSuccessfully = TryPlaceTrap(x, y, option.prefab);
+                        placedSuccessfully = TryPlaceTrap(x, y, option.prefab, option.cost);
                         break;
                 }
 
@@ -138,7 +138,7 @@ public class MouseBuilder : MonoBehaviour
         }
     }
 
-    bool TryPlaceWall(int x, int y, GameObject prefab)
+    bool TryPlaceWall(int x, int y, GameObject prefab, int cost)
     {
         if (prefab == null)
             return false;
@@ -160,7 +160,7 @@ public class MouseBuilder : MonoBehaviour
             return false;
         }
 
-        bool placed = GridManager.Instance.PlaceWall(x, y, prefab);
+        bool placed = GridManager.Instance.PlaceWall(x, y, prefab, cost);
 
         if (placed && pathTester != null)
         {
@@ -170,7 +170,7 @@ public class MouseBuilder : MonoBehaviour
         return placed;
     }
 
-    bool TryPlaceTurret(int x, int y, GameObject prefab)
+    bool TryPlaceTurret(int x, int y, GameObject prefab, int cost)
     {
         if (prefab == null)
             return false;
@@ -187,10 +187,10 @@ public class MouseBuilder : MonoBehaviour
             return false;
         }
 
-        return GridManager.Instance.PlaceTurret(x, y, prefab);
+        return GridManager.Instance.PlaceTurret(x, y, prefab, cost);
     }
 
-    bool TryPlaceTrap(int x, int y, GameObject prefab)
+    bool TryPlaceTrap(int x, int y, GameObject prefab, int cost)
     {
         if (prefab == null)
             return false;
@@ -213,7 +213,7 @@ public class MouseBuilder : MonoBehaviour
             return false;
         }
 
-        return GridManager.Instance.PlaceTrap(x, y, prefab);
+        return GridManager.Instance.PlaceTrap(x, y, prefab, cost);
     }
 
     bool IsSpecialCell(int x, int y)
@@ -264,7 +264,13 @@ public class MouseBuilder : MonoBehaviour
         {
             if (GridManager.Instance.GetXY(hit.point, out int x, out int y))
             {
-                GridManager.Instance.ClearCell(x, y);
+                int refund = GridManager.Instance.ClearCell(x, y);
+
+                if (refund > 0 && EconomyManager.Instance != null)
+                {
+                    EconomyManager.Instance.AddMoney(refund);
+                    Debug.Log("Refunded: " + refund);
+                }
 
                 if (pathTester != null)
                 {
