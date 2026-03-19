@@ -5,6 +5,7 @@ public class EnemyHealth : MonoBehaviour
 {
     public int maxHealth = 3;
     public EnemyUnitType unitType = EnemyUnitType.Ground;
+    public int moneyReward = 5;
 
     private int currentHealth;
 
@@ -28,6 +29,11 @@ public class EnemyHealth : MonoBehaviour
 
     void Die()
     {
+        if (EconomyManager.Instance != null)
+        {
+            EconomyManager.Instance.AddMoney(moneyReward);
+        }
+
         Debug.Log(gameObject.name + " died.");
         Destroy(gameObject);
     }

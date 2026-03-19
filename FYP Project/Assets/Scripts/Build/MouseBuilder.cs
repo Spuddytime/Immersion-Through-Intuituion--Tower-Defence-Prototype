@@ -59,7 +59,6 @@ public class MouseBuilder : MonoBehaviour
         currentBuildIndex = index;
 
         Debug.Log("Build Mode: " + buildOptions[index].name);
-
         UpdateBuildModeUI();
     }
 
@@ -108,44 +107,57 @@ public class MouseBuilder : MonoBehaviour
             {
                 BuildableOption option = buildOptions[currentBuildIndex];
 
+                if (EconomyManager.Instance != null && !EconomyManager.Instance.CanAfford(option.cost))
+                {
+                    Debug.Log("Not enough money for " + option.name);
+                    return;
+                }
+
+                bool placedSuccessfully = false;
+
                 switch (option.type)
                 {
                     case BuildType.Wall:
-                        TryPlaceWall(x, y, option.prefab);
+                        placedSuccessfully = TryPlaceWall(x, y, option.prefab);
                         break;
 
                     case BuildType.Turret:
-                        TryPlaceTurret(x, y, option.prefab);
+                        placedSuccessfully = TryPlaceTurret(x, y, option.prefab);
                         break;
 
                     case BuildType.Trap:
-                        TryPlaceTrap(x, y, option.prefab);
+                        placedSuccessfully = TryPlaceTrap(x, y, option.prefab);
                         break;
+                }
+
+                if (placedSuccessfully && EconomyManager.Instance != null)
+                {
+                    EconomyManager.Instance.SpendMoney(option.cost);
                 }
             }
         }
     }
 
-    void TryPlaceWall(int x, int y, GameObject prefab)
+    bool TryPlaceWall(int x, int y, GameObject prefab)
     {
         if (prefab == null)
-            return;
+            return false;
 
         if (IsSpecialCell(x, y))
         {
             Debug.Log("Cannot build on start or goal cell.");
-            return;
+            return false;
         }
 
         if (GridManager.Instance.HasWall(x, y))
         {
-            return;
+            return false;
         }
 
         if (WouldBlockPath(x, y))
         {
             Debug.Log("Cannot place wall here - it would block all paths.");
-            return;
+            return false;
         }
 
         bool placed = GridManager.Instance.PlaceWall(x, y, prefab);
@@ -154,53 +166,54 @@ public class MouseBuilder : MonoBehaviour
         {
             pathTester.TestPath();
         }
+
+        return placed;
     }
 
-    void TryPlaceTurret(int x, int y, GameObject prefab)
+    bool TryPlaceTurret(int x, int y, GameObject prefab)
     {
         if (prefab == null)
-            return;
+            return false;
 
         if (!GridManager.Instance.HasWall(x, y))
         {
             Debug.Log("Turrets must be placed on an existing wall.");
-            return;
+            return false;
         }
 
         if (GridManager.Instance.HasTurret(x, y))
         {
             Debug.Log("This wall already has a turret.");
-            return;
+            return false;
         }
 
-        GridManager.Instance.PlaceTurret(x, y, prefab);
+        return GridManager.Instance.PlaceTurret(x, y, prefab);
     }
 
-    void TryPlaceTrap(int x, int y, GameObject prefab)
+    bool TryPlaceTrap(int x, int y, GameObject prefab)
     {
         if (prefab == null)
-            return;
+            return false;
 
-        // Traps go on walkable ground, not on walls
         if (GridManager.Instance.HasWall(x, y))
         {
             Debug.Log("Traps must be placed on open ground, not on walls.");
-            return;
+            return false;
         }
 
         if (GridManager.Instance.HasTrap(x, y))
         {
             Debug.Log("This tile already has a trap.");
-            return;
+            return false;
         }
 
         if (IsSpecialCell(x, y))
         {
             Debug.Log("Cannot place trap on start or goal cell.");
-            return;
+            return false;
         }
 
-        GridManager.Instance.PlaceTrap(x, y, prefab);
+        return GridManager.Instance.PlaceTrap(x, y, prefab);
     }
 
     bool IsSpecialCell(int x, int y)

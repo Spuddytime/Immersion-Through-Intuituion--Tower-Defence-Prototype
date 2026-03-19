@@ -8,6 +8,7 @@ public class UIManager : MonoBehaviour
 
     public TextMeshProUGUI baseHealthText;
     public TextMeshProUGUI waveText;
+    public TextMeshProUGUI moneyText;
     public TextMeshProUGUI buildModeText;
     public TextMeshProUGUI buildHintText;
     public GameObject gameOverText;
@@ -23,7 +24,7 @@ public class UIManager : MonoBehaviour
 
         if (buildHintText != null)
         {
-            buildHintText.text = "1 = Wall    2 = Turret    3 = Trap";
+            buildHintText.text = "1 = Wall    2 = Turret    3 = Trap    4 = Anti-Air";
         }
     }
 
@@ -40,6 +41,14 @@ public class UIManager : MonoBehaviour
         if (waveText != null)
         {
             waveText.text = "Wave: " + currentWave;
+        }
+    }
+
+    public void UpdateMoney(int currentMoney)
+    {
+        if (moneyText != null)
+        {
+            moneyText.text = "Money: " + currentMoney;
         }
     }
 
