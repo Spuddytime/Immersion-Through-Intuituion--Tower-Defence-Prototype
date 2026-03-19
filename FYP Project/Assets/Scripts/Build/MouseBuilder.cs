@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Handles player input for placing walls, mounted turrets, and traps using the mouse
+// Handles player input for placing buildable objects using the mouse
 public class MouseBuilder : MonoBehaviour
 {
     public Camera mainCamera;
@@ -13,14 +13,7 @@ public class MouseBuilder : MonoBehaviour
 
     public PathTester pathTester;
 
-    private BuildMode currentBuildMode = BuildMode.Wall;
-
-    private enum BuildMode
-    {
-        Wall,
-        Turret,
-        Trap
-    }
+    int currentBuildIndex = 0;
 
     void Start()
     {
@@ -46,46 +39,36 @@ public class MouseBuilder : MonoBehaviour
     void HandleBuildModeInput()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            currentBuildMode = BuildMode.Wall;
-            Debug.Log("Build Mode: Wall");
-            UpdateBuildModeUI();
-        }
+            SetBuildMode(0);
 
         if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            currentBuildMode = BuildMode.Turret;
-            Debug.Log("Build Mode: Turret");
-            UpdateBuildModeUI();
-        }
+            SetBuildMode(1);
 
         if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            currentBuildMode = BuildMode.Trap;
-            Debug.Log("Build Mode: Trap");
-            UpdateBuildModeUI();
-        }
+            SetBuildMode(2);
+
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+            SetBuildMode(3);
+    }
+
+    void SetBuildMode(int index)
+    {
+        if (buildOptions == null || index >= buildOptions.Length)
+            return;
+
+        currentBuildIndex = index;
+
+        Debug.Log("Build Mode: " + buildOptions[index].name);
+
+        UpdateBuildModeUI();
     }
 
     void UpdateBuildModeUI()
     {
-        if (UIManager.Instance == null)
+        if (UIManager.Instance == null || buildOptions == null || buildOptions.Length == 0)
             return;
 
-        switch (currentBuildMode)
-        {
-            case BuildMode.Wall:
-                UIManager.Instance.UpdateBuildMode("Wall");
-                break;
-
-            case BuildMode.Turret:
-                UIManager.Instance.UpdateBuildMode("Turret");
-                break;
-
-            case BuildMode.Trap:
-                UIManager.Instance.UpdateBuildMode("Trap");
-                break;
-        }
+        UIManager.Instance.UpdateBuildMode(buildOptions[currentBuildIndex].name);
     }
 
     void UpdateHighlight()
@@ -114,33 +97,38 @@ public class MouseBuilder : MonoBehaviour
         if (mainCamera == null || GridManager.Instance == null)
             return;
 
+        if (buildOptions == null || buildOptions.Length == 0)
+            return;
+
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 
         if (Physics.Raycast(ray, out RaycastHit hit, 100f, groundLayer))
         {
             if (GridManager.Instance.GetXY(hit.point, out int x, out int y))
             {
-                switch (currentBuildMode)
+                BuildableOption option = buildOptions[currentBuildIndex];
+
+                switch (option.type)
                 {
-                    case BuildMode.Wall:
-                        TryPlaceWall(x, y);
+                    case BuildType.Wall:
+                        TryPlaceWall(x, y, option.prefab);
                         break;
 
-                    case BuildMode.Turret:
-                        TryPlaceTurret(x, y);
+                    case BuildType.Turret:
+                        TryPlaceTurret(x, y, option.prefab);
                         break;
 
-                    case BuildMode.Trap:
-                        TryPlaceTrap(x, y);
+                    case BuildType.Trap:
+                        TryPlaceTrap(x, y, option.prefab);
                         break;
                 }
             }
         }
     }
 
-    void TryPlaceWall(int x, int y)
+    void TryPlaceWall(int x, int y, GameObject prefab)
     {
-        if (wallPrefab == null)
+        if (prefab == null)
             return;
 
         if (IsSpecialCell(x, y))
@@ -160,7 +148,7 @@ public class MouseBuilder : MonoBehaviour
             return;
         }
 
-        bool placed = GridManager.Instance.PlaceWall(x, y, wallPrefab);
+        bool placed = GridManager.Instance.PlaceWall(x, y, prefab);
 
         if (placed && pathTester != null)
         {
@@ -168,9 +156,9 @@ public class MouseBuilder : MonoBehaviour
         }
     }
 
-    void TryPlaceTurret(int x, int y)
+    void TryPlaceTurret(int x, int y, GameObject prefab)
     {
-        if (turretPrefab == null)
+        if (prefab == null)
             return;
 
         if (!GridManager.Instance.HasWall(x, y))
@@ -185,35 +173,35 @@ public class MouseBuilder : MonoBehaviour
             return;
         }
 
-        GridManager.Instance.PlaceTurret(x, y, turretPrefab);
+        GridManager.Instance.PlaceTurret(x, y, prefab);
     }
 
-    void TryPlaceTrap(int x, int y)
-{
-    if (trapPrefab == null)
-        return;
+    void TryPlaceTrap(int x, int y, GameObject prefab)
+    {
+        if (prefab == null)
+            return;
 
-    // Traps go on walkable ground, not on walls
-    if (GridManager.Instance.HasWall(x, y))
-         {   
-        Debug.Log("Traps must be placed on open ground, not on walls.");
-        return;
-        }
-
-    if (GridManager.Instance.HasTrap(x, y))
+        // Traps go on walkable ground, not on walls
+        if (GridManager.Instance.HasWall(x, y))
         {
-        Debug.Log("This tile already has a trap.");
-        return;
+            Debug.Log("Traps must be placed on open ground, not on walls.");
+            return;
         }
 
-    if (IsSpecialCell(x, y))
+        if (GridManager.Instance.HasTrap(x, y))
         {
-        Debug.Log("Cannot place trap on start or goal cell.");
-        return;
+            Debug.Log("This tile already has a trap.");
+            return;
         }
 
-    GridManager.Instance.PlaceTrap(x, y, trapPrefab);
-}
+        if (IsSpecialCell(x, y))
+        {
+            Debug.Log("Cannot place trap on start or goal cell.");
+            return;
+        }
+
+        GridManager.Instance.PlaceTrap(x, y, prefab);
+    }
 
     bool IsSpecialCell(int x, int y)
     {
