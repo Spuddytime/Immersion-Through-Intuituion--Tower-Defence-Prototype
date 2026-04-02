@@ -8,6 +8,9 @@ public class MouseBuilder : MonoBehaviour
     public Transform cellHighlight;
     public LayerMask groundLayer;
 
+    public Material validHighlightMaterial;
+    public Material invalidHighlightMaterial;
+
     public Transform startMarker;
     public Transform goalMarker;
 
@@ -43,16 +46,16 @@ public class MouseBuilder : MonoBehaviour
 
     void HandleBuildModeInput()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
             SetBuildMode(0);
 
-        if (Input.GetKeyDown(KeyCode.Alpha2))
+        if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
             SetBuildMode(1);
 
-        if (Input.GetKeyDown(KeyCode.Alpha3))
+        if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
             SetBuildMode(2);
 
-        if (Input.GetKeyDown(KeyCode.Alpha4))
+        if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
             SetBuildMode(3);
     }
 
@@ -89,11 +92,75 @@ public class MouseBuilder : MonoBehaviour
                 Vector3 cellWorldPos = GridManager.Instance.GetWorldPosition(x, y);
                 cellHighlight.position = cellWorldPos + new Vector3(0f, 0.05f, 0f);
                 cellHighlight.gameObject.SetActive(true);
+
+                if (buildOptions != null && buildOptions.Length > 0)
+                {
+                    BuildableOption option = buildOptions[currentBuildIndex];
+                    bool isValid = IsValidPlacement(x, y, option);
+
+                    Renderer rend = cellHighlight.GetComponentInChildren<Renderer>();
+                    if (rend != null)
+                    {
+                        if (isValid && validHighlightMaterial != null)
+                        {
+                            rend.material = validHighlightMaterial;
+                        }
+                        else if (!isValid && invalidHighlightMaterial != null)
+                        {
+                            rend.material = invalidHighlightMaterial;
+                        }
+                    }
+                }
+
                 return;
             }
         }
 
         cellHighlight.gameObject.SetActive(false);
+    }
+
+    bool IsValidPlacement(int x, int y, BuildableOption option)
+    {
+        if (GridManager.Instance == null || option == null)
+            return false;
+
+        switch (option.type)
+        {
+            case BuildType.Wall:
+                if (IsSpecialCell(x, y))
+                    return false;
+
+                if (GridManager.Instance.HasWall(x, y))
+                    return false;
+
+                if (WouldBlockPath(x, y))
+                    return false;
+
+                return true;
+
+            case BuildType.Turret:
+                if (!GridManager.Instance.HasWall(x, y))
+                    return false;
+
+                if (GridManager.Instance.HasTurret(x, y))
+                    return false;
+
+                return true;
+
+            case BuildType.Trap:
+                if (IsSpecialCell(x, y))
+                    return false;
+
+                if (GridManager.Instance.HasWall(x, y))
+                    return false;
+
+                if (GridManager.Instance.HasTrap(x, y))
+                    return false;
+
+                return true;
+        }
+
+        return false;
     }
 
     void TryPlace()
