@@ -278,6 +278,8 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  validHighlightMaterial: {fileID: 2100000, guid: c90d12c46083ffd4e993c81170ced22e, type: 2}
+  invalidHighlightMaterial: {fileID: 2100000, guid: bbe48962496ead44bb3aa5d47dbb2074, type: 2}
   startMarker: {fileID: 762104488}
   goalMarker: {fileID: 2026592620}
   pathTester: {fileID: 241094053}
@@ -1990,7 +1992,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3662147098670344749, guid: 0c2c0b0a443a8074294b16e1bd27ae5b, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4159814260700808360, guid: 0c2c0b0a443a8074294b16e1bd27ae5b, type: 3}
       propertyPath: m_TagString
@@ -2248,7 +2250,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!81 &1345959567
 AudioListener:
   m_ObjectHideFlags: 0
