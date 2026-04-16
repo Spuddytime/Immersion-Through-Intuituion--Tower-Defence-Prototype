@@ -10,6 +10,11 @@ public class EnemyMover : MonoBehaviour
     public Transform goalMarker;
     public int damageToBase = 1;
 
+    [Header("Height")]
+    public float groundHeightOffset = 0.5f;
+    public float flyingHeightOffset = 1.5f;
+    public EnemyUnitType unitType = EnemyUnitType.Ground;
+
     [Header("Visuals")]
     public Transform visualRoot;
     public Vector3 visualRotationOffset = Vector3.zero;
@@ -53,7 +58,7 @@ public class EnemyMover : MonoBehaviour
 
         if (path != null && path.Count > 0)
         {
-            transform.position = path[0].worldPosition + Vector3.up * 0.5f;
+            transform.position = GetWorldPositionWithHeight(path[0]);
         }
     }
 
@@ -65,7 +70,7 @@ public class EnemyMover : MonoBehaviour
         if (currentPathIndex >= path.Count)
             return;
 
-        Vector3 targetPosition = path[currentPathIndex].worldPosition + Vector3.up * 0.5f;
+        Vector3 targetPosition = GetWorldPositionWithHeight(path[currentPathIndex]);
         Vector3 moveDirection = targetPosition - transform.position;
         moveDirection.y = 0f;
 
@@ -112,6 +117,18 @@ public class EnemyMover : MonoBehaviour
                 ReachGoal();
             }
         }
+    }
+
+    Vector3 GetWorldPositionWithHeight(GridNode node)
+    {
+        float heightOffset = groundHeightOffset;
+
+        if (unitType == EnemyUnitType.Flying)
+        {
+            heightOffset = flyingHeightOffset;
+        }
+
+        return node.worldPosition + Vector3.up * heightOffset;
     }
 
     void ReachGoal()
