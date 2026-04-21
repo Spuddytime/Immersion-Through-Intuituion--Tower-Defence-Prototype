@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR;
@@ -27,10 +28,19 @@ public class VRBuilder : MonoBehaviour
     public LineRenderer laserLine;
     public Transform hitMarker;
 
+    [Header("Placement Feedback")]
+    public bool usePlacementPop = true;
+    public float popDuration = 0.15f;
+    public float popStartScaleMultiplier = 0.2f;
+
     private int currentBuildIndex = 0;
 
     private InputDevice rightHand;
+
     private bool lastTriggerState = false;
+    private bool lastGripState = false;
+    private bool lastPrimaryState = false;
+    private bool lastSecondaryState = false;
 
     void Start()
     {
@@ -40,7 +50,6 @@ public class VRBuilder : MonoBehaviour
 
     void Update()
     {
-        // Reacquire controller if needed
         if (!rightHand.isValid)
         {
             TryInitializeRightHand();
@@ -58,65 +67,67 @@ public class VRBuilder : MonoBehaviour
         if (devices.Count > 0)
         {
             rightHand = devices[0];
-            Debug.Log("Right hand controller found: " + rightHand.name);
+            Debug.Log("Right controller connected: " + rightHand.name);
         }
     }
 
     void HandleInput()
     {
-        // VR trigger placement
-        if (rightHand.isValid)
-        {
-            if (rightHand.TryGetFeatureValue(CommonUsages.triggerButton, out bool triggerPressed))
-            {
-                if (triggerPressed && !lastTriggerState)
-                {
-                    TryPlace();
-                }
-
-                lastTriggerState = triggerPressed;
-            }
-        }
-
-        // Optional desktop fallback for testing
-        if (Input.GetMouseButtonDown(0))
-        {
-            TryPlace();
-        }
-
-        // Optional remove test
-        if (Input.GetMouseButtonDown(1))
-        {
-            TryRemove();
-        }
-
-        // Optional upgrade test
-        if (Input.GetKeyDown(KeyCode.U))
-        {
-            TryUpgrade();
-        }
-
-        // Build mode selection
-        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-            SetBuildMode(0);
-
-        if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-            SetBuildMode(1);
-
-        if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
-            SetBuildMode(2);
-
-        if (Input.GetKeyDown(KeyCode.Alpha4) || Input.GetKeyDown(KeyCode.Keypad4))
-            SetBuildMode(3);
-    }
-
-    void SetBuildMode(int index)
-    {
-        if (buildOptions == null || index >= buildOptions.Length)
+        if (!rightHand.isValid)
             return;
 
-        currentBuildIndex = index;
-        Debug.Log("VR Build Mode: " + buildOptions[index].name);
+        // Trigger = Place
+        if (rightHand.TryGetFeatureValue(CommonUsages.triggerButton, out bool triggerPressed))
+        {
+            if (triggerPressed && !lastTriggerState)
+            {
+                TryPlace();
+            }
+            lastTriggerState = triggerPressed;
+        }
+
+        // Grip = Remove
+        if (rightHand.TryGetFeatureValue(CommonUsages.gripButton, out bool gripPressed))
+        {
+            if (gripPressed && !lastGripState)
+            {
+                TryRemove();
+            }
+            lastGripState = gripPressed;
+        }
+
+        // Primary button (A on Quest right controller) = Cycle build mode
+        if (rightHand.TryGetFeatureValue(CommonUsages.primaryButton, out bool primaryPressed))
+        {
+            if (primaryPressed && !lastPrimaryState)
+            {
+                CycleBuildMode();
+            }
+            lastPrimaryState = primaryPressed;
+        }
+
+        // Secondary button (B on Quest right controller) = Upgrade
+        if (rightHand.TryGetFeatureValue(CommonUsages.secondaryButton, out bool secondaryPressed))
+        {
+            if (secondaryPressed && !lastSecondaryState)
+            {
+                TryUpgrade();
+            }
+            lastSecondaryState = secondaryPressed;
+        }
+    }
+
+    void CycleBuildMode()
+    {
+        if (buildOptions == null || buildOptions.Length == 0)
+            return;
+
+        currentBuildIndex++;
+
+        if (currentBuildIndex >= buildOptions.Length)
+            currentBuildIndex = 0;
+
+        Debug.Log("VR Build Mode: " + buildOptions[currentBuildIndex].name);
         UpdateBuildModeUI();
     }
 
@@ -265,32 +276,40 @@ public class VRBuilder : MonoBehaviour
                 }
 
                 bool placedSuccessfully = false;
+                GameObject placedObject = null;
 
                 switch (option.type)
                 {
                     case BuildType.Wall:
-                        placedSuccessfully = TryPlaceWall(x, y, option.prefab, option.cost);
+                        placedSuccessfully = TryPlaceWall(x, y, option.prefab, option.cost, out placedObject);
                         break;
 
                     case BuildType.Turret:
-                        placedSuccessfully = TryPlaceTurret(x, y, option.prefab, option.cost);
+                        placedSuccessfully = TryPlaceTurret(x, y, option.prefab, option.cost, out placedObject);
                         break;
 
                     case BuildType.Trap:
-                        placedSuccessfully = TryPlaceTrap(x, y, option.prefab, option.cost);
+                        placedSuccessfully = TryPlaceTrap(x, y, option.prefab, option.cost, out placedObject);
                         break;
                 }
 
                 if (placedSuccessfully && EconomyManager.Instance != null)
                 {
                     EconomyManager.Instance.SpendMoney(option.cost);
+
+                    if (usePlacementPop && placedObject != null)
+                    {
+                        StartCoroutine(PlayPlacementPop(placedObject.transform));
+                    }
                 }
             }
         }
     }
 
-    bool TryPlaceWall(int x, int y, GameObject prefab, int cost)
+    bool TryPlaceWall(int x, int y, GameObject prefab, int cost, out GameObject placedObject)
     {
+        placedObject = null;
+
         if (prefab == null)
             return false;
 
@@ -311,16 +330,25 @@ public class VRBuilder : MonoBehaviour
 
         bool placed = GridManager.Instance.PlaceWall(x, y, prefab, cost);
 
-        if (placed && pathTester != null)
+        if (placed)
         {
-            pathTester.TestPath();
+            GridNode node = GridManager.Instance.GetNode(x, y);
+            if (node != null)
+                placedObject = node.wallObject;
+
+            if (pathTester != null)
+            {
+                pathTester.TestPath();
+            }
         }
 
         return placed;
     }
 
-    bool TryPlaceTurret(int x, int y, GameObject prefab, int cost)
+    bool TryPlaceTurret(int x, int y, GameObject prefab, int cost, out GameObject placedObject)
     {
+        placedObject = null;
+
         if (prefab == null)
             return false;
 
@@ -336,11 +364,22 @@ public class VRBuilder : MonoBehaviour
             return false;
         }
 
-        return GridManager.Instance.PlaceTurret(x, y, prefab, cost);
+        bool placed = GridManager.Instance.PlaceTurret(x, y, prefab, cost);
+
+        if (placed)
+        {
+            GridNode node = GridManager.Instance.GetNode(x, y);
+            if (node != null)
+                placedObject = node.turretObject;
+        }
+
+        return placed;
     }
 
-    bool TryPlaceTrap(int x, int y, GameObject prefab, int cost)
+    bool TryPlaceTrap(int x, int y, GameObject prefab, int cost, out GameObject placedObject)
     {
+        placedObject = null;
+
         if (prefab == null)
             return false;
 
@@ -362,7 +401,39 @@ public class VRBuilder : MonoBehaviour
             return false;
         }
 
-        return GridManager.Instance.PlaceTrap(x, y, prefab, cost);
+        bool placed = GridManager.Instance.PlaceTrap(x, y, prefab, cost);
+
+        if (placed)
+        {
+            GridNode node = GridManager.Instance.GetNode(x, y);
+            if (node != null)
+                placedObject = node.trapObject;
+        }
+
+        return placed;
+    }
+
+    IEnumerator PlayPlacementPop(Transform placedTransform)
+    {
+        if (placedTransform == null)
+            yield break;
+
+        Vector3 finalScale = placedTransform.localScale;
+        Vector3 startScale = finalScale * popStartScaleMultiplier;
+
+        placedTransform.localScale = startScale;
+
+        float timer = 0f;
+
+        while (timer < popDuration)
+        {
+            timer += Time.deltaTime;
+            float t = timer / popDuration;
+            placedTransform.localScale = Vector3.Lerp(startScale, finalScale, t);
+            yield return null;
+        }
+
+        placedTransform.localScale = finalScale;
     }
 
     void TryRemove()
@@ -443,7 +514,7 @@ public class VRBuilder : MonoBehaviour
 
         GridManager.Instance.SetCellBlocked(x, y, true);
 
-        var testPath = Pathfinder.Instance.FindPath(startX, startY, goalX, goalY);
+        List<GridNode> testPath = Pathfinder.Instance.FindPath(startX, startY, goalX, goalY);
 
         GridManager.Instance.SetCellBlocked(x, y, false);
 
