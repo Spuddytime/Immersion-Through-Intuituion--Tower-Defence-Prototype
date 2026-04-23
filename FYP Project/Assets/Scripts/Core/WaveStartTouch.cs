@@ -21,8 +21,7 @@ public class WaveStartTouch : MonoBehaviour
         if (waveSpawner.IsSpawning)
             return;
 
-        Debug.Log("Wave button pressed by: " + other.name);
-        Debug.Log("WaveSpawner used by button: " + waveSpawner.name);
+        Debug.Log($"Wave button pressed by {other.name}, using spawner {waveSpawner.gameObject.name} | ID: {waveSpawner.GetInstanceID()}");
 
         waveSpawner.StartNextWave();
         isArmed = false;
