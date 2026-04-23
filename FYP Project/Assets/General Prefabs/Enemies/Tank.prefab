@@ -22,7 +22,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6942580085881288344, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_Name
-      value: Enemy_Ground Variant
+      value: Tank
       objectReference: {fileID: 0}
     - target: {fileID: 6942580085881288344, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_IsActive
@@ -31,18 +31,18 @@ PrefabInstance:
     - target: {fileID: 7567730614935704170, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 6fa867df03a7dff449f1cee82f85f9d2, type: 2}
+      objectReference: {fileID: 2100000, guid: 98759e4e8b9bed74785eea4d480783f9, type: 2}
     - target: {fileID: 8442066031002244593, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.8
+      value: 1.49536
       objectReference: {fileID: 0}
     - target: {fileID: 8442066031002244593, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.4
+      value: 0.78492
       objectReference: {fileID: 0}
     - target: {fileID: 8442066031002244593, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.8
+      value: 1.18896
       objectReference: {fileID: 0}
     - target: {fileID: 8442066031002244593, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_LocalPosition.x
@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8442066031002244593, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 8.377121
+      value: 8.8261
       objectReference: {fileID: 0}
     - target: {fileID: 8442066031002244593, guid: 9e0f5fa09b04ed444b18ded39ed250ad, type: 3}
       propertyPath: m_LocalPosition.z
@@ -118,10 +118,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 570fac1b1a9027d4a816b24364b6d128, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 2
+  moveSpeed: 1
   turnSpeed: 1
   goalMarker: {fileID: 0}
-  damageToBase: 1
+  damageToBase: 5
   groundHeightOffset: 1.5
   flyingHeightOffset: 1.5
   unitType: 0
@@ -142,9 +142,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18bb141d840483045b21015d76902aa3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 4
+  maxHealth: 16
   unitType: 0
-  moneyReward: 6
+  moneyReward: 75
 --- !u!54 &5685055217777401270
 Rigidbody:
   m_ObjectHideFlags: 0

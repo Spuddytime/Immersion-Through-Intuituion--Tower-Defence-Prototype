@@ -33,6 +33,15 @@ public class VRBuilder : MonoBehaviour
     public float popDuration = 0.15f;
     public float popStartScaleMultiplier = 0.2f;
 
+    [Header("Haptics")]
+    public bool useHaptics = true;
+    public float placeHapticStrength = 0.4f;
+    public float placeHapticDuration = 0.08f;
+    public float removeHapticStrength = 0.25f;
+    public float removeHapticDuration = 0.06f;
+    public float upgradeHapticStrength = 0.5f;
+    public float upgradeHapticDuration = 0.1f;
+
     private int currentBuildIndex = 0;
 
     private InputDevice rightHand;
@@ -209,6 +218,17 @@ public class VRBuilder : MonoBehaviour
         }
     }
 
+    void SendHaptics(float amplitude, float duration)
+    {
+        if (!useHaptics)
+            return;
+
+        if (!rightHand.isValid)
+            return;
+
+        rightHand.SendHapticImpulse(0u, amplitude, duration);
+    }
+
     bool IsValidPlacement(int x, int y, BuildableOption option)
     {
         if (GridManager.Instance == null || option == null)
@@ -301,6 +321,8 @@ public class VRBuilder : MonoBehaviour
                     {
                         StartCoroutine(PlayPlacementPop(placedObject.transform));
                     }
+
+                    SendHaptics(placeHapticStrength, placeHapticDuration);
                 }
             }
         }
@@ -453,6 +475,7 @@ public class VRBuilder : MonoBehaviour
                 {
                     EconomyManager.Instance.AddMoney(refund);
                     Debug.Log("Refunded: " + refund);
+                    SendHaptics(removeHapticStrength, removeHapticDuration);
                 }
 
                 if (pathTester != null)
@@ -479,6 +502,7 @@ public class VRBuilder : MonoBehaviour
                 if (upgraded)
                 {
                     Debug.Log("Upgraded build at cell: " + x + ", " + y);
+                    SendHaptics(upgradeHapticStrength, upgradeHapticDuration);
                 }
             }
         }

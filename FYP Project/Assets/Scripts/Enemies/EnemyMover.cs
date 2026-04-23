@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,11 +25,19 @@ public class EnemyMover : MonoBehaviour
     public float hoverHeight = 0.2f;
     public float hoverSpeed = 3f;
 
+    [Header("Slow Visuals")]
+    public Color slowedColor = Color.cyan;
+
     private List<GridNode> path;
     private int currentPathIndex = 0;
     private BaseHealth baseHealth;
 
     private Vector3 visualBaseLocalPosition;
+
+    private float speedMultiplier = 1f;
+
+    private Renderer[] renderers;
+    private Color[] originalColors;
 
     private void OnEnable()
     {
@@ -48,6 +57,20 @@ public class EnemyMover : MonoBehaviour
         {
             visualBaseLocalPosition = visualRoot.localPosition;
             visualRoot.localRotation = Quaternion.Euler(visualRotationOffset);
+        }
+
+        renderers = GetComponentsInChildren<Renderer>();
+        originalColors = new Color[renderers.Length];
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            // Make sure each enemy gets its own material instance
+            renderers[i].material = new Material(renderers[i].material);
+
+            if (renderers[i].material.HasProperty("_Color"))
+            {
+                originalColors[i] = renderers[i].material.color;
+            }
         }
     }
 
@@ -105,7 +128,7 @@ public class EnemyMover : MonoBehaviour
         transform.position = Vector3.MoveTowards(
             transform.position,
             targetPosition,
-            moveSpeed * Time.deltaTime
+            moveSpeed * speedMultiplier * Time.deltaTime
         );
 
         if (Vector3.Distance(transform.position, targetPosition) < 0.05f)
@@ -129,6 +152,38 @@ public class EnemyMover : MonoBehaviour
         }
 
         return node.worldPosition + Vector3.up * heightOffset;
+    }
+
+    public void ApplySlow(float multiplier, float duration)
+    {
+        StartCoroutine(SlowRoutine(multiplier, duration));
+    }
+
+    IEnumerator SlowRoutine(float multiplier, float duration)
+    {
+        speedMultiplier *= multiplier;
+
+        // Apply slowed tint
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i].material.HasProperty("_Color"))
+            {
+                renderers[i].material.color = slowedColor;
+            }
+        }
+
+        yield return new WaitForSeconds(duration);
+
+        speedMultiplier /= multiplier;
+
+        // Restore original colors
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i].material.HasProperty("_Color"))
+            {
+                renderers[i].material.color = originalColors[i];
+            }
+        }
     }
 
     void ReachGoal()
